@@ -1,2 +1,3 @@
 g4f
 colorama
+requests>=2.31.0  
