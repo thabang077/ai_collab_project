@@ -12,7 +12,7 @@ def main():
             break
 
         if not user_input:
-            continue
+            continue  
 
         print("AI is thinking...\n")
 
