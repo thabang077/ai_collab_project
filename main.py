@@ -1,13 +1,25 @@
 from ai_module import ask_ai
- 
+
 def main():
-    print("Welcome to AI4Free CLI! Type 'exit' to quit.")
+    print("AI CLI Assistant")
+    print("Type 'exit' to quit.\n")
+
     while True:
-        question = input("You: ")
-        if question.lower() == "exit":
+        user_input = input("You: ").strip()
+
+        if user_input.lower() == "exit":
+            print("Goodbye!")
             break
-        answer = ask_ai(question)
-        print("AI:", answer)
- 
+
+        if not user_input:
+            continue
+
+        print("AI is thinking...\n")
+
+        response = ask_ai(user_input)
+
+        print("🤖 AI:", response)
+        print()
+
 if __name__ == "__main__":
     main()
