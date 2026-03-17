@@ -1,3 +1,4 @@
+from ai_module import ask_ai
 import os
 import sys
 import random
@@ -117,7 +118,7 @@ def print_banner(ai_name, theme_colors):
     print(f"""
 {BOLD}{c['system']}
 ╔══════════════════════════════════════════╗
-║             g4f CLI  v{VERSION}              ║
+║             AI CLI Assistant              ║
 ║         Type 'help' to get started       ║
 ╚══════════════════════════════════════════╝
 {RESET}{DIM}AI Assistant:{RESET} {BOLD}{c['ai']}{ai_name}{RESET}
@@ -532,15 +533,28 @@ def main():
         elif cmd in ("color", "prompt", "theme", "mood", "timestamp"):
             pass
 
-        # ─────────────────────────────────────────────────────
-        # Anything else → validate input and (in a full implementation) send to AI
-        # ─────────────────────────────────────────────────────
+        # ── AI Handling ─────────────────────────────────────
         valid, err = validate_input(raw, last_input)
         if not valid:
             print(err)
             continue
 
         last_input = raw
+
+        query = MOODS[mood] + raw
+
+        sys_msg(DIM, "AI is thinking...\n")
+
+        try:
+            response = ask_ai(query)
+        except Exception as e:
+            response = f"{RED}Error: {e}{RESET}"
+
+        time_str = ""
+        if timestamp_on:
+            time_str = f"{DIM}[{datetime.now().strftime('%H:%M:%S')}] {RESET}"
+
+        print(f"{time_str}{BOLD}{theme_colors['ai']}{ai_name}:{RESET} {response}\n")
 
 
 if __name__ == "__main__":
