@@ -1,6 +1,2 @@
-ai4free
-requests>=2.31.0 
-tqdm
-httpx
-packaging
-ai4free webscout httpx
+g4f
+colorama
