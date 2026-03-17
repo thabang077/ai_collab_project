@@ -239,27 +239,323 @@ def build_prompt(prompt_style, theme_colors):
 
 # ── Main CLI ───────────────────────────────────────────────────
 def main():
-    print("AI CLI Assistant")
-    print("Type 'exit' to quit.\n")
- 
+
+    # ── Session state ─────────────────────────────────────────
+    ai_name        = "AI"
+    theme          = "default"
+    prompt_style   = "classic"
+    banner_enabled = True
+    mood           = "default"
+    timestamp_on   = False
+    last_input     = ""
+
+    theme_colors = THEMES[theme].copy()   # mutable copy (supports `color` cmd)
+
+    if banner_enabled:
+        print_banner(ai_name, theme_colors)
+
     while True:
-        user_input = input("You: ").strip()
- 
-        if user_input.lower() == "exit":
-            print("Goodbye!")
+
+        prompt_text = build_prompt(prompt_style, theme_colors)
+
+        try:
+            sys.stdout.write(prompt_text)
+            sys.stdout.flush()
+            raw = input("").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nGoodbye!")
             break
- 
-        if not user_input:
+
+        cmd = raw.lower()
+
+        # ── Exit ──────────────────────────────────────────────
+        if cmd in ("exit", "quit"):
+            sys_msg(theme_colors["system"], "Goodbye! 👋")
+            break
+
+        # ── Help ──────────────────────────────────────────────
+        elif cmd == "help":
+            print(build_help(theme_colors))
             continue
- 
-        print("AI is thinking...\n")
- 
-        response = ask_ai(user_input)
- 
-        print("🤖 AI:", response)
-        print()
- 
+
+        elif cmd.startswith("help "):
+            topic = raw[5:].strip().lower()
+            if topic in COMMAND_HELP:
+                divider(theme_colors["system"])
+                print(f"\n{BOLD}{theme_colors['system']}{topic}{RESET}\n")
+                print(COMMAND_HELP[topic])
+                divider(theme_colors["system"])
+                print()
+            else:
+                sys_msg(RED, f"✖  No detailed help for '{topic}'. Try 'help' for full list.")
+            continue
+
+        # ── Version ───────────────────────────────────────────
+        elif cmd == "version":
+            sys_msg(theme_colors["system"], f"g4f CLI  v{VERSION}")
+            continue
+
+        # ── Clear ─────────────────────────────────────────────
+        elif cmd == "clear":
+            os.system("cls" if os.name == "nt" else "clear")
+            continue
+
+        # ── Rename AI ─────────────────────────────────────────
+        elif cmd == "rename":
+            sys_msg(YELLOW, "Usage: rename <name>   e.g. rename Jarvis")
+            continue
+
+        elif cmd.startswith("rename "):
+            ai_name = raw[7:].strip() or "AI"
+            sys_msg(theme_colors["system"], f"✔  AI renamed to '{ai_name}'")
+            continue
+
+        # ── Random name ───────────────────────────────────────
+        elif cmd == "randomname":
+            ai_name = random.choice(AI_NAMES)
+            sys_msg(theme_colors["system"], f"✔  AI renamed to '{ai_name}'")
+            continue
+
+        # ── Themes list ───────────────────────────────────────
+        elif cmd == "themes":
+            sys_msg(BOLD, "Available themes:")
+            for t, cols in THEMES.items():
+                marker = " ◀ active" if t == theme else ""
+                print(f"  {cols['ai']}●{RESET}  {t}{DIM}{marker}{RESET}")
+            print()
+            continue
+
+        # ── Theme change ──────────────────────────────────────
+        elif cmd.startswith("theme "):
+            new_theme = raw.split()[1].lower()
+            if new_theme not in THEMES:
+                sys_msg(RED, f"✖  Unknown theme '{new_theme}'.")
+                sys_msg(DIM, "   Use 'themes' to see options.")
+            else:
+                theme = new_theme
+                theme_colors = THEMES[theme].copy()
+                sys_msg(theme_colors["system"], f"✔  Theme switched to '{theme}'")
+            continue
+
+        # ── Fine-grained color customization ──────────────────
+        elif cmd == "colors":
+            sys_msg(BOLD, "Available colors:")
+            for name, code in COLOR_MAP.items():
+                print(f"  {code}■  {name}{RESET}")
+            print()
+            continue
+
+        elif cmd.startswith("color "):
+            parts = raw.split()
+            if len(parts) != 3:
+                sys_msg(YELLOW, "Usage: color <element> <color>")
+                sys_msg(DIM,    "       Elements: user · ai · system")
+                sys_msg(DIM,    "       Example : color ai blue")
+            else:
+                element, color_name = parts[1].lower(), parts[2].lower()
+                if element not in ("user", "ai", "system"):
+                    sys_msg(RED, f"✖  Unknown element '{element}'. Use: user, ai, system")
+                elif color_name not in COLOR_MAP:
+                    sys_msg(RED, f"✖  Unknown color '{color_name}'.")
+                    sys_msg(DIM, f"   Available: {', '.join(COLOR_MAP)}")
+                else:
+                    theme_colors[element] = COLOR_MAP[color_name]
+                    sys_msg(theme_colors["system"], f"✔  '{element}' color set to {COLOR_MAP[color_name]}{color_name}{RESET}")
+            continue
+
+        # ── Prompt styles ─────────────────────────────────────
+        elif cmd == "prompts":
+            sys_msg(BOLD, "Available prompt styles:")
+            for p in PROMPT_STYLES:
+                marker = " ◀ active" if p == prompt_style else ""
+                print(f"  {theme_colors['user']}•{RESET}  {p}{DIM}{marker}{RESET}")
+            print()
+            continue
+
+        elif cmd.startswith("prompt "):
+            style = raw.split()[1].lower()
+            if style not in PROMPT_STYLES:
+                sys_msg(RED, f"✖  Unknown style '{style}'.")
+                sys_msg(DIM, f"   Available: {', '.join(PROMPT_STYLES)}")
+            else:
+                prompt_style = style
+                sys_msg(theme_colors["system"], f"✔  Prompt style set to '{style}'")
+            continue
+
+        # ── Mood ──────────────────────────────────────────────
+        elif cmd == "moods":
+            sys_msg(BOLD, "Available moods:")
+            for m, desc in MOODS.items():
+                marker = " ◀ active" if m == mood else ""
+                preview = desc[:40] + "…" if len(desc) > 40 else (desc or "(no prefix)")
+                print(f"  {theme_colors['ai']}•{RESET}  {m:<10} {DIM}{preview}{RESET}{DIM}{marker}{RESET}")
+            print()
+            continue
+
+        elif cmd == "mood":
+            sys_msg(YELLOW, f"Current mood: {mood}")
+            sys_msg(DIM,     "Usage: mood <name>   e.g. mood funny")
+            continue
+
+        elif cmd.startswith("mood "):
+            new_mood = raw.split()[1].lower()
+            if new_mood not in MOODS:
+                sys_msg(RED, f"✖  Unknown mood '{new_mood}'.")
+                sys_msg(DIM, f"   Use 'moods' to see options.")
+            else:
+                mood = new_mood
+                sys_msg(theme_colors["system"], f"✔  Mood set to '{mood}'")
+            continue
+
+        # ── Timestamp ─────────────────────────────────────────
+        elif cmd == "timestamp on":
+            timestamp_on = True
+            sys_msg(theme_colors["system"], "✔  Timestamps enabled")
+            continue
+
+        elif cmd == "timestamp off":
+            timestamp_on = False
+            sys_msg(theme_colors["system"], "✔  Timestamps disabled")
+            continue
+
+        elif cmd == "timestamp":
+            state = "on" if timestamp_on else "off"
+            sys_msg(DIM, f"Timestamps are currently {state}. Use 'timestamp on/off' to toggle.")
+            continue
+
+        # ── Banner commands ───────────────────────────────────
+        elif cmd == "banner":
+            print_banner(ai_name, theme_colors)
+            continue
+
+        elif cmd == "banner off":
+            banner_enabled = False
+            sys_msg(DIM, "Banner disabled")
+            continue
+
+        elif cmd == "banner on":
+            banner_enabled = True
+            print_banner(ai_name, theme_colors)
+            continue
+
+        # ── Reset UI ──────────────────────────────────────────
+        elif cmd == "resetui":
+            ai_name        = "AI"
+            theme          = "default"
+            theme_colors   = THEMES[theme].copy()
+            prompt_style   = "classic"
+            banner_enabled = True
+            mood           = "default"
+            timestamp_on   = False
+            last_input     = ""
+            sys_msg(theme_colors["system"], "✔  CLI settings reset to defaults")
+            continue
+
+        # ── Whoami ────────────────────────────────────────────
+        elif cmd == "whoami":
+            divider(theme_colors["system"])
+            print(f"""
+  {DIM}AI Name   {RESET}{BOLD}{theme_colors['ai']}{ai_name}{RESET}
+  {DIM}Theme     {RESET}{theme}
+  {DIM}Prompt    {RESET}{prompt_style}
+  {DIM}Mood      {RESET}{mood}
+  {DIM}Timestamp {RESET}{'on' if timestamp_on else 'off'}
+  {DIM}Banner    {RESET}{'enabled' if banner_enabled else 'disabled'}
+  {DIM}Version   {RESET}v{VERSION}
+""")
+            divider(theme_colors["system"])
+            print()
+            continue
+
+        # ── Tips ──────────────────────────────────────────────
+        elif cmd == "tips":
+            tips = [
+                "Use 'themes' to browse all color themes",
+                "Use 'color ai green' to fine-tune a single color",
+                "Try 'mood concise' for shorter AI answers",
+                "Use 'prompt bracket' for a different input look",
+                "Type 'help <command>' for details on any command",
+                "Use 'timestamp on' to see when each reply arrives",
+                "Reset everything with 'resetui'",
+            ]
+            sys_msg(BOLD, "CLI Tips:")
+            for tip in tips:
+                print(f"  {theme_colors['system']}•{RESET}  {tip}")
+            print()
+            continue
+
+        # ── Examples ──────────────────────────────────────────
+        elif cmd == "examples":
+            examples = [
+                ("rename Jarvis",       "Rename AI to Jarvis"),
+                ("theme ocean",         "Switch to ocean theme"),
+                ("color user orange",   "Make your text orange"),
+                ("prompt bracket",      "Use [you] prompt style"),
+                ("mood funny",          "Get humorous responses"),
+                ("timestamp on",        "Show time on replies"),
+                ("help mood",           "Detailed help on mood"),
+                ("roast me",            "Get roasted 🔥"),
+                ("roast Jarvis",        "Roast someone by name"),
+                ("joke",                "Hear a random joke 😂"),
+            ]
+            sys_msg(BOLD, "Example commands:")
+            for ex, desc in examples:
+                print(f"  {theme_colors['user']}{ex:<26}{RESET} {DIM}{desc}{RESET}")
+            print()
+            continue
+
+        # ── Echo ──────────────────────────────────────────────
+        elif cmd.startswith("echo "):
+            print(raw[5:])
+            continue
+
+        # ── Roast ─────────────────────────────────────────────
+        elif cmd in ("roast", "roast me") or cmd.startswith("roast "):
+            if cmd.startswith("roast ") and cmd not in ("roast me",):
+                target = raw[6:].strip()
+            else:
+                target = "you"
+            roast = random.choice(ROASTS)
+            divider(RED)
+            print(f"{BOLD}{RED}🔥 [{target}]{RESET} {roast}\n")
+            continue
+
+        # ── Joke ──────────────────────────────────────────────
+        elif cmd in ("joke", "jokes"):
+            setup, punchline = random.choice(JOKES)
+            divider(theme_colors["system"])
+            print(f"{BOLD}{theme_colors['system']}😂 {setup}{RESET}")
+            print(f"   {punchline}\n")
+            continue
+
+
+        # ── Unknown single-word commands ──────────────────────
+        elif cmd in ("color", "prompt", "theme", "mood", "timestamp"):
+            pass
+
+        # ── AI Handling ─────────────────────────────────────
+        valid, err = validate_input(raw, last_input)
+        if not valid:
+            print(err)
+            continue
+
+        last_input = raw
+
+        query = MOODS[mood] + raw
+
+        sys_msg(DIM, "AI is thinking...\n")
+
+        try:
+            response = ask_ai(query)
+        except Exception as e:
+            response = f"{RED}Error: {e}{RESET}"
+
+        time_str = ""
+        if timestamp_on:
+            time_str = f"{DIM}[{datetime.now().strftime('%H:%M:%S')}] {RESET}"
+
+        print(f"{time_str}{BOLD}{theme_colors['ai']}{ai_name}:{RESET} {response}\n")
+
+
 if __name__ == "__main__":
     main()
-
-    
