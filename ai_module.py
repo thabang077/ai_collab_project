@@ -1,16 +1,12 @@
-import requests
-
-def ai_agent(question):
-    url = "https://api.chucknorris.io/jokes/random"
-
+from g4f.client import Client
+ 
+def ask_ai(question, model_name="gpt-4"):
+    client = Client()
     try:
-        response = requests.get(url, timeout=5)
-
-        if response.status_code == 200:
-            data = response.json()
-            return data["value"]
-        else:
-            return "AI service unavailable"
-
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "user", "content": question}],
+        )
+        return response.choices[0].message.content
     except Exception as e:
-        return "Error connecting to AI service"
+        return f"Error: AI connection failed: {e}"
