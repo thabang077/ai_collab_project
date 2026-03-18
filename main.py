@@ -80,6 +80,15 @@ if __name__ == "__main__":
 
         elif user_input.lower() == "clearhistory":
             chat.clear()
+        elif user_input.lower() == "help":
+                    print("""
+        Available commands:
+        - history : Show chat history
+        - metrics : Show usage stats
+        - save txt : Save chat to TXT
+        - save json : Save chat to JSON
+        - exit    : Exit program
+        """)
 
         else:
             # ✅ Add user message
