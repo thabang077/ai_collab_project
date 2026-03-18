@@ -3,6 +3,7 @@ import os
 import sys
 import random
 import re
+import json
 from datetime import datetime
 
 # ── Version ────────────────────────────────────────────────────
@@ -237,8 +238,58 @@ def build_prompt(prompt_style, theme_colors):
         return f"{BOLD}{theme_colors['user']}You:{RESET} "
 
 
+class ChatHistory:
+    def __init__(self):
+        self.history = []
+        self.total_messages = 0
+
+    def add(self, role, content):
+        msg = {
+            "role": role,
+            "content": content,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        self.history.append(msg)
+        self.total_messages += 1
+
+    def show(self):
+        if not self.history:
+            print("No chat history.\n")
+            return
+        
+        print("\n--- Chat History ---")
+        for m in self.history:
+            print(f"[{m['time']}] {m['role'].upper()}: {m['content']}")
+        print()
+
+    def save_txt(self, file="chat_history.txt"):
+        with open(file, "w", encoding="utf-8") as f:
+            for m in self.history:
+                f.write(f"[{m['time']}] {m['role']}: {m['content']}\n")
+        print(f"Saved to {file}\n")
+
+    def save_json(self, file="chat_history.json"):
+        with open(file, "w", encoding="utf-8") as f:
+            json.dump(self.history, f, indent=4)
+        print(f"Saved to {file}\n")
+
+    def metrics(self):
+        user = len([m for m in self.history if m["role"] == "user"])
+        ai   = len([m for m in self.history if m["role"] == "ai"])
+        print("\n--- Metrics ---")
+        print(f"Total messages: {self.total_messages}")
+        print(f"User messages : {user}")
+        print(f"AI messages   : {ai}\n")
+
+    def clear(self):
+        self.history = []
+        self.total_messages = 0
+        print("History cleared.\n")
+
+
 # ── Main CLI ───────────────────────────────────────────────────
 def main():
+    chat = ChatHistory()
 
     # ── Session state ─────────────────────────────────────────
     ai_name        = "AI"
@@ -528,6 +579,26 @@ def main():
             print(f"   {punchline}\n")
             continue
 
+        # ── History Commands ──────────────────────────────────
+        elif cmd == "history":
+            chat.show()
+            continue
+
+        elif cmd == "save txt":
+            chat.save_txt()
+            continue
+
+        elif cmd == "save json":
+            chat.save_json()
+            continue
+
+        elif cmd == "metrics":
+            chat.metrics()
+            continue
+
+        elif cmd == "clearhistory":
+            chat.clear()
+            continue
 
         # ── Unknown single-word commands ──────────────────────
         elif cmd in ("color", "prompt", "theme", "mood", "timestamp"):
@@ -540,7 +611,8 @@ def main():
             continue
 
         last_input = raw
-
+        chat.add("user", raw)
+        
         query = MOODS[mood] + raw
 
         sys_msg(DIM, "AI is thinking...\n")
@@ -555,6 +627,9 @@ def main():
             time_str = f"{DIM}[{datetime.now().strftime('%H:%M:%S')}] {RESET}"
 
         print(f"{time_str}{BOLD}{theme_colors['ai']}{ai_name}:{RESET} {response}\n")
+        chat.add("ai", response)
+
+
 
 
 if __name__ == "__main__":
