@@ -45,10 +45,10 @@ class ChatHistory:
         print(f"User messages : {user_msgs}")
         print(f"AI messages   : {ai_msgs}\n")
 
-    def clear(self):
-        self.history = []
-        self.total_messages = 0
-        print("Chat history cleared.\n")
+def clear(self):
+    self.history = []
+    self.total_messages = 0
+    print("Chat history cleared.\n")
 
 
 # ✅ Simple AI response function (you can replace with API later)
@@ -79,8 +79,18 @@ if __name__ == "__main__":
             chat.metrics()
 
         elif user_input.lower() == "clearhistory":
-            chat.clear()
-
+                    chat.clear()
+        
+        elif user_input.lower() == "help":
+                    print("""
+        Available commands:
+        - history : Show chat history
+        - metrics : Show usage stats
+        - save txt : Save chat to TXT
+        - save json : Save chat to JSON
+        - exit    : Exit program
+        """)
+        
         else:
             # ✅ Add user message
             chat.add("user", user_input)
