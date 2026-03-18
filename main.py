@@ -291,7 +291,7 @@ def print_banner(ai_name, theme_colors):
     print(f"""
 {BOLD}{c['system']}
 ╔══════════════════════════════════════════╗
-║             AI CLI Assistant              ║
+║             🤖 AI CLI Assistant          ║
 ║         Type 'help' to get started       ║
 ╚══════════════════════════════════════════╝
 {RESET}{DIM}AI Assistant:{RESET} {BOLD}{c['ai']}{ai_name}{RESET}
