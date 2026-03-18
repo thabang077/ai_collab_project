@@ -1,49 +1,55 @@
 import os
-import g4f
-from dotenv import load_dotenv
 from g4f.client import Client as G4FClient
-
-load_dotenv(override=True)
+from g4f.Provider import PollinationsAI, HuggingSpace
 
 # ── Provider registry ─────────────────────────────────────────────────────────
 PROVIDERS = {
     "chatgpt": {
-        "label":    "ChatGPT (GPT-4)",
-        "model":    "gpt-4",
+        "label":    "GPT-4o",
+        "model":    "gpt-4o",
         "best_for": "research",
         "tagline":  "Best for research, writing & general knowledge",
         "icon":     "🟢",
     },
-    "claude": {
-        "label":    "Claude (Sonnet)",
-        "model":    "claude-sonnet-4-5-20250929",
+    "mini": {
+        "label":    "Qwen3 Coder 30B",
+        "model":    "HuggingSpace command-B",
         "best_for": "coding",
-        "tagline":  "Best for coding, debugging & technical tasks",
+        "tagline":  "Fast and efficient for coding & debugging",
         "icon":     "🟡",
     },
-    "gemini": {
-        "label":    "Gemini 2.5 Flash",
-        "model":    "gemini-2.5-flash",
+    "reasoning": {
+        "label":    "HuggingSpace Command-A",
+        "model":    "command-a",
         "best_for": "mathematics",
-        "tagline":  "Best for mathematics, logic & data analysis",
+        "tagline":  "Best for math, logic & deep reasoning",
         "icon":     "🔵",
     },
 }
 
 DEFAULT_PROVIDER = "chatgpt"
 
+
 # ── Keyword hints used by main.py for smart suggestions ──────────────────────
-RESEARCH_KEYWORDS  = {"research", "study", "history", "explain", "summarize",
-                      "what is", "who is", "why does", "article", "essay",
-                      "write", "news", "fact", "source", "report"}
-CODING_KEYWORDS    = {"code", "bug", "error", "debug", "function", "class",
-                      "script", "program", "python", "javascript", "html",
-                      "css", "sql", "api", "algorithm", "implement", "fix",
-                      "refactor", "test", "compile", "syntax", "lambda"}
-MATH_KEYWORDS      = {"math", "maths", "calculate", "solve", "equation",
-                      "integral", "derivative", "algebra", "geometry",
-                      "statistics", "probability", "matrix", "formula",
-                      "proof", "theorem", "calculus", "arithmetic", "compute"}
+RESEARCH_KEYWORDS  = {
+    "research", "study", "history", "explain", "summarize",
+    "what is", "who is", "why does", "article", "essay",
+    "write", "news", "fact", "source", "report"
+}
+
+CODING_KEYWORDS    = {
+    "code", "bug", "error", "debug", "function", "class",
+    "script", "program", "python", "javascript", "html",
+    "css", "sql", "api", "algorithm", "implement", "fix",
+    "refactor", "test", "compile", "syntax", "lambda"
+}
+
+MATH_KEYWORDS      = {
+    "math", "maths", "calculate", "solve", "equation",
+    "integral", "derivative", "algebra", "geometry",
+    "statistics", "probability", "matrix", "formula",
+    "proof", "theorem", "calculus", "arithmetic", "compute"
+}
 
 
 def detect_suggested_provider(text: str) -> str | None:
@@ -54,28 +60,39 @@ def detect_suggested_provider(text: str) -> str | None:
         return any(kw in lower for kw in kw_set)
 
     if hits(CODING_KEYWORDS):
-        return "claude"
+        return "mini"
     if hits(MATH_KEYWORDS):
-        return "gemini"
+        return "reasoning"
     if hits(RESEARCH_KEYWORDS):
         return "chatgpt"
     return None
 
 
-# ── Public ask function ───────────────────────────────────────────────────────
+def _is_spam(text: str) -> bool:
+    lower = text.lower()
+    return any(marker.lower() in lower for marker in _SPAM_MARKERS)
 
+
+# ── Public ask function ───────────────────────────────────────────────────────
 def ask_ai(question: str, provider: str = DEFAULT_PROVIDER) -> str:
     """Route question to the requested provider and return the reply."""
     dispatch = {
-        "chatgpt": _ask_chatgpt,
-        "claude":  _ask_claude,
-        "gemini":  _ask_gemini,
+        "chatgpt":   _ask_chatgpt,
+        "mini":      _ask_gpt41_mini,
+        "reasoning": _ask_gpto1_mini,
     }
+
     fn = dispatch.get(provider)
     if fn is None:
         return (f"Error: Unknown provider '{provider}'. "
                 f"Available: {', '.join(dispatch)}")
-    return fn(question)
+
+    result = fn(question)
+
+    if _is_spam(result):
+        return "Error: The response was flagged as spam/injected content. Please try again."
+
+    return result
 
 
 # ── Provider implementations ──────────────────────────────────────────────────
@@ -84,35 +101,35 @@ def _ask_chatgpt(question: str) -> str:
     client = G4FClient()
     try:
         response = client.chat.completions.create(
-            model    = "gpt-4",
-            messages = [{"role": "user", "content": question}],
+            model="gpt-4o",
+            messages=[{"role": "user", "content": question}],
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Error: ChatGPT connection failed — {e}"
+        return f"Error: GPT-4o connection failed — {e}"
 
 
-def _ask_claude(question: str) -> str:
+def _ask_gpt41_mini(question: str) -> str:
     client = G4FClient()
     try:
         response = client.chat.completions.create(
-            model    = "claude-sonnet-4-5-20250929",
-            provider = g4f.Provider.LMArena,
-            messages = [{"role": "user", "content": question}],
+            model="command-a",
+            provider=HuggingSpace,
+            messages=[{"role": "user", "content": question}],
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Error: Claude connection failed — {e}"
+        return f"Error: Qwen3 Coder 30B connection failed — {e}"
 
 
-def _ask_gemini(question: str) -> str:
+def _ask_gpto1_mini(question: str) -> str:
     client = G4FClient()
     try:
         response = client.chat.completions.create(
-            model    = "gemini-2.5-flash",
-            provider = g4f.Provider.LMArena,
-            messages = [{"role": "user", "content": question}],
+            model="qwen-3-30b",
+            provider=HuggingSpace,
+            messages=[{"role": "user", "content": question}],
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Error: Gemini connection failed — {e}"
+        return f"Error: Perplexity Sonar connection failed — {e}"

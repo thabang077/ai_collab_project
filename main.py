@@ -38,8 +38,8 @@ COLOR_MAP = {
 # ── Provider display colors ─────────────────────────────────────
 PROVIDER_COLORS = {
     "chatgpt": GREEN,
-    "claude":  YELLOW,
-    "gemini":  BLUE,
+    "mini":  YELLOW,
+    "reasoning":  BLUE,
 }
 
 # ── Themes ─────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ def print_providers(current_provider):
               f"  {DIM}{info['tagline']}{RESET}{marker}")
         print(f"     {DIM}key: {key}   best for: {info['best_for']}{RESET}")
     print(f"\n  {DIM}Tip: type  provider <name>  to switch  "
-          f"(e.g.  provider claude){RESET}\n")
+          f"(e.g.  provider mini){RESET}\n")
 
 
 # ── Dynamic help (reads live state) ────────────────────────────
@@ -161,10 +161,10 @@ def build_help(theme_colors):
 {BOLD}AI Provider{RESET}
   {Y}providers{RESET}              List all providers with recommendations
   {Y}provider{RESET}               Show active provider
-  {Y}provider <name>{RESET}        Switch provider  (chatgpt · claude · gemini)
+  {Y}provider <name>{RESET}        Switch provider  (chatgpt · mini · reasoning)
                            🟢 chatgpt  — research & writing
-                           🟡 claude   — coding & debugging
-                           🔵 gemini   — mathematics & logic
+                           🟡 mini   — coding & debugging
+                           🔵 reasoning   — mathematics & logic
 
 {BOLD}Customization{RESET}
   {Y}rename <n>{RESET}          Rename the AI  (e.g. rename Jarvis)
@@ -220,9 +220,9 @@ COMMAND_HELP = {
                   "Switches the active AI provider.\n"
                   "Available providers:\n"
                   "  chatgpt  — ChatGPT GPT-4    (best for research)\n"
-                  "  claude   — Claude Sonnet    (best for coding)\n"
-                  "  gemini   — Gemini 1.5 Flash (best for mathematics)\n"
-                  "Example: provider claude\n"
+                  "  mini   — mini Sonnet    (best for coding)\n"
+                  "  reasoning   — reasoning 1.5 Flash (best for mathematics)\n"
+                  "Example: provider mini\n"
                   "Use 'providers' to see the full list with descriptions."),
 }
 
@@ -539,7 +539,7 @@ def main():
         elif cmd == "tips":
             tips = [
                 "Use 'providers' to see all AI options with recommendations",
-                "Type 'provider claude' for coding help, 'provider gemini' for math",
+                "Type 'provider mini' for coding help, 'provider reasoning' for math",
                 "Use 'themes' to browse all color themes",
                 "Use 'color ai green' to fine-tune a single color",
                 "Try 'mood concise' for shorter AI answers",
@@ -558,8 +558,8 @@ def main():
         elif cmd == "examples":
             examples = [
                 ("providers",           "List all AI providers"),
-                ("provider claude",     "Switch to Claude for coding"),
-                ("provider gemini",     "Switch to Gemini for math"),
+                ("provider mini",     "Switch to mini for coding"),
+                ("provider reasoning",     "Switch to reasoning for math"),
                 ("provider chatgpt",    "Switch to ChatGPT for research"),
                 ("rename Jarvis",       "Rename AI to Jarvis"),
                 ("theme ocean",         "Switch to ocean theme"),
