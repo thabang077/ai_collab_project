@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 
 # ── Version ────────────────────────────────────────────────────
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 # ── ANSI Colors ────────────────────────────────────────────────
 CYAN    = "\033[96m"
@@ -53,53 +53,33 @@ AI_NAMES = [
     "Pixel", "Astra", "Cosmo", "Nimbus", "Luna",
 ]
 
-# ── Roast Lines ────────────────────────────────────────────────
-ROASTS = [
-    "You're the human equivalent of a 404 error.",
-    "I've seen better code in a kindergarten scratch project.",
-    "You bring everyone so much joy... when you leave the room.",
-    "Your Wi-Fi password is probably 'password123', isn't it.",
-    "You're not stupid, you just have bad luck thinking.",
-    "I'd roast you harder but my terms of service have limits.",
-    "You're like a software update — nobody asked for you.",
-    "Even your Google searches must be embarrassing.",
-    "You're the reason the AI needs a safety filter.",
-    "I've seen better arguments in a YouTube comment section.",
-    "You could get lost in a straight hallway.",
-    "Your code probably has more bugs than a rainforest.",
-    "If brains were code, yours would be written in Notepad.",
-    "You're the type to reply 'you too' when the waiter says enjoy your meal.",
-    "I'm not saying you're slow, but turtles overtake you in a debate.",
-]
-
-# ── Jokes ───────────────────────────────────────────────────────
-JOKES = [
-    ("Why do programmers prefer dark mode?", "Because light attracts bugs."),
-    ("Why did the developer go broke?", "Because he used up all his cache."),
-    ("How do you comfort a JavaScript bug?", "You console it."),
-    ("Why did the Python programmer wear glasses?", "Because he couldn't C#."),
-    ("What's a computer's favorite snack?", "Microchips."),
-    ("Why was the database administrator unhappy?", "Because he had too many tables to handle."),
-    ("What do you call a programmer from Finland?", "Nerdic."),
-    ("Why did the boolean break up with the integer?", "Because it just wasn't True anymore."),
-    ("What did the router say to the doctor?", "It hurts when IP."),
-    ("Why do Java developers wear glasses?", "Because they don't C++."),
-    ("What's an astronaut's favorite key?", "The space bar."),
-    ("Why did the computer get cold?", "It left its Windows open."),
-    ("How many programmers does it take to change a light bulb?", "None — that's a hardware problem."),
-    ("What do you call 8 hobbits?", "A hobbyte."),
-    ("Why did the function break up with the loop?", "Too many iterations."),
-]
-
 # ── Mood map (prefixed to user query before ask_ai) ────────────
 MOODS = {
     "default":  "",
-    "concise":  "Reply in as few words as possible. ",
-    "formal":   "Reply in a formal, professional tone. ",
-    "friendly": "Reply in a warm, friendly, casual tone. ",
-    "funny":    "Reply with humor and wit. ",
-    "teacher":  "Explain like I am a beginner. Use simple language and examples. ",
-    "expert":   "Assume I am an expert. Be technical and precise. ",
+    "concise":  (
+        "Be extremely concise. Answer in one or two sentences max. "
+        "No fluff, no preamble, straight to the point. "
+    ),
+    "formal": (
+        "Respond in a polished, professional, and formal tone. "
+        "Use complete sentences, avoid contractions, and maintain decorum. "
+    ),
+    "friendly": (
+        "Respond in a warm, casual, and upbeat tone — like texting a good friend. "
+        "Use light humor where natural, keep it approachable and encouraging. "
+    ),
+    "funny": (
+        "Reply with wit, sarcasm, and sharp humor. Slip in a clever joke or pun if it fits. "
+        "Keep it entertaining while still being helpful. "
+    ),
+    "teacher": (
+        "Explain as if the person is a complete beginner with zero prior knowledge. "
+        "Use simple language, relatable analogies, and short examples. Avoid jargon. "
+    ),
+    "expert": (
+        "Assume the person is a domain expert. Skip basics, use precise technical language, "
+        "reference advanced concepts freely, and be thorough. "
+    ),
 }
 
 
@@ -111,6 +91,198 @@ def sys_msg(color, text):
 
 def divider(color=DIM):
     print(f"{color}{'─' * 44}{RESET}")
+
+
+# ── Hardcoded Badass Jokes (fallback + random pool) ────────────
+HARDCODED_JOKES = [
+    (
+        "I asked God for a bike, but I know God doesn't work that way.",
+        "So I stole a bike and asked for forgiveness."
+    ),
+    (
+        "My therapist says I have a preoccupation with vengeance.",
+        "We'll see about that."
+    ),
+    (
+        "Why do orphans love boomerangs?",
+        "It's the only thing that ever comes back."
+    ),
+    (
+        "I told my wife she should embrace her mistakes.",
+        "She gave me a hug."
+    ),
+    (
+        "What's the difference between a pizza and my ex?",
+        "A pizza can actually feed a family."
+    ),
+    (
+        "Scientists say the universe is made of protons, neutrons, and electrons.",
+        "They forgot to mention morons."
+    ),
+    (
+        "My doctor told me I need to watch my drinking.",
+        "So now I do it in front of a mirror."
+    ),
+    (
+        "I tried to write a joke about unemployment.",
+        "It didn't work out."
+    ),
+    (
+        "What's the difference between a good programmer and a bad programmer?",
+        "About three Stack Overflow tabs."
+    ),
+    (
+        "Why did the existentialist fail the exam?",
+        "He left it blank — nothing has meaning anyway."
+    ),
+    (
+        "My wife said I had to stop acting like a flamingo.",
+        "I had to put my foot down."
+    ),
+    (
+        "How many narcissists does it take to change a light bulb?",
+        "One. They hold the bulb and wait for the world to revolve around them."
+    ),
+    (
+        "I told my boss three companies were after me and I needed a raise.",
+        "He asked which companies. I said: gas, electric, and water."
+    ),
+    (
+        "Why did the software developer go broke?",
+        "Because he cleared his cache and cookies and lost everything."
+    ),
+    (
+        "My life coach told me to write a letter to the person who hurt me most.",
+        "I'm now waiting for the mailman to deliver it to myself."
+    ),
+]
+
+# ── Hardcoded Savage Roasts (fallback + random pool) ───────────
+HARDCODED_ROASTS = [
+    "You're not the dumbest person alive, but you better hope they don't die.",
+    "Your birth certificate is an apology letter from the hospital.",
+    "You have the energy of a low-battery notification — always dying, never actually shutting up.",
+    "You're the reason instructions on shampoo bottles say 'repeat' — someone had to dumb it down for you.",
+    "Your LinkedIn says 'open to opportunities' because even your career ghosted you.",
+    "Somewhere a tree is working overtime producing oxygen just for you, and it deeply regrets it.",
+    "You're the human equivalent of a software update at 2 AM — nobody asked for you, you take forever, and you barely improve anything.",
+    "You're proof that evolution occasionally hits Ctrl+Z.",
+    "Your parents looked at you and invented the phrase 'unconditional love' — because no conditions would've kept them around.",
+    "You're like a cloud — when you disappear, it's a beautiful day.",
+    "The only thing your ex misses about you is the feeling of not having you around.",
+    "You have a face made for radio and a voice made for text.",
+    "I'd roast you properly but my therapist says I need to stop setting fire to garbage.",
+    "You're the type who gets outsmarted by a CAPTCHA on a daily basis.",
+    "NASA is studying you — not because you're special, but because they've never seen a black hole with a LinkedIn profile.",
+]
+
+# ── Joke Style Selector ────────────────────────────────────────
+JOKE_STYLES = [
+    "misdirection — the setup sounds totally innocent, then the punchline is a gut punch from nowhere",
+    "dark irony — the darkest possible interpretation of an everyday situation",
+    "absurdist logic taken to its horrifying natural conclusion",
+    "a fake-deep observation about life that ends in pure nihilistic chaos",
+    "self-aware meta humor where the joke eats itself alive",
+    "a savage comparison that makes you feel personally attacked and laughing at the same time",
+]
+
+# ── Roast Style Selector ───────────────────────────────────────
+ROAST_STYLES = [
+    "surgical precision — one quiet, specific observation that dismantles their entire identity",
+    "fake compliment that flips into a devastating gut punch in the last four words",
+    "existential dread — make them question why they were born and what they're doing with their life",
+    "statistical improbability — frame how astronomically unlikely it is that they turned out this bad",
+    "tech/software metaphor — compare them to the most broken, unwanted piece of software imaginable",
+    "comparison to something universally disappointing, useless, or abandoned",
+]
+
+# ── AI-powered Joke ────────────────────────────────────────────
+def get_ai_joke():
+    """70% AI-generated, 30% hardcoded — always nuclear-level funny."""
+    # 30% chance: use a hardcoded banger for instant delivery
+    if random.random() < 0.30:
+        return random.choice(HARDCODED_JOKES)
+
+    style = random.choice(JOKE_STYLES)
+    examples = random.sample(HARDCODED_JOKES, 2)
+    ex1 = f"Q: {examples[0][0]}\nA: {examples[0][1]}"
+    ex2 = f"Q: {examples[1][0]}\nA: {examples[1][1]}"
+
+    prompt = (
+        "You are a battle-hardened stand-up comedian who has performed at the Comedy Cellar, "
+        "roasted celebrities on live TV, and never once told a safe joke. "
+        "Your jokes have made people spit out drinks, miss their subway stop, and text the joke "
+        "to five people immediately. You do not do mild. You do not do safe. "
+        "You only produce jokes that hit like a freight train.\n\n"
+        f"Style for this joke: {style}\n\n"
+        "Here are two examples of the MINIMUM quality I expect:\n"
+        f"{ex1}\n"
+        f"{ex2}\n\n"
+        "Now write ONE original joke that is FUNNIER and MORE UNEXPECTED than both examples above. "
+        "The punchline must be something nobody sees coming. "
+        "NO recycled jokes. NO safe territory. If it doesn't make someone wheeze with laughter "
+        "or feel slightly attacked, it's not good enough — try harder.\n\n"
+        "Format EXACTLY as:\n"
+        "Q: <setup>\n"
+        "A: <punchline>\n"
+        "Output ONLY those two lines. Zero extra text. Zero preamble."
+    )
+    try:
+        response = ask_ai(prompt).strip()
+        lines = [l.strip() for l in response.splitlines() if l.strip()]
+        setup = punchline = None
+        for line in lines:
+            if line.lower().startswith("q:"):
+                setup = line[2:].strip()
+            elif line.lower().startswith("a:"):
+                punchline = line[2:].strip()
+        if setup and punchline:
+            return setup, punchline
+        if len(lines) >= 2:
+            return lines[0], lines[1]
+        # Last resort: hardcoded banger
+        return random.choice(HARDCODED_JOKES)
+    except Exception:
+        return random.choice(HARDCODED_JOKES)
+
+
+# ── AI-powered Roast ───────────────────────────────────────────
+def get_ai_roast(target):
+    """70% AI-generated, 30% hardcoded — always soul-destroying."""
+    subject = "me" if target in ("you", "me") else target
+
+    # 30% chance: fire a hardcoded nuke instantly
+    if random.random() < 0.30:
+        return random.choice(HARDCODED_ROASTS)
+
+    style = random.choice(ROAST_STYLES)
+    examples = random.sample(HARDCODED_ROASTS, 3)
+    ex_block = "\n".join(f"— {e}" for e in examples)
+
+    prompt = (
+        f"You are the most feared roast master in history. You have made celebrities cry on stage, "
+        f"ended careers with a single sentence, and turned whole rooms silent with one line. "
+        f"Your roasts are legendary because they feel PERSONAL — like you've studied the target "
+        f"for years and found the one sentence that exposes everything.\n\n"
+        f"Target: {subject}\n"
+        f"Style: {style}\n\n"
+        f"Here are examples of the MINIMUM brutality I expect:\n"
+        f"{ex_block}\n\n"
+        f"Now write ONE roast for {subject} that is MORE devastating than any example above. "
+        "Rules:\n"
+        "— Must feel specific and personal, not generic.\n"
+        "— Must be clever AND cruel — the kind that gets screenshotted and shared.\n"
+        "— Must sting for days. They should question their life choices after reading it.\n"
+        "— Should land like a sniper shot — quiet, precise, absolutely fatal.\n"
+        "— No filler words, no warm-up. Pure payload from the first word.\n\n"
+        "Output ONLY the roast. One to two sentences max. "
+        "No intro, no label, no emoji, no explanation. Go for the jugular."
+    )
+    try:
+        result = ask_ai(prompt).strip().strip('"').strip("'")
+        return result if result else random.choice(HARDCODED_ROASTS)
+    except Exception:
+        return random.choice(HARDCODED_ROASTS)
 
 
 # ── Banner ─────────────────────────────────────────────────────
@@ -139,7 +311,9 @@ def build_help(theme_colors):
   {Y}exit / quit{RESET}            Exit the CLI
   {Y}clear{RESET}                  Clear the terminal screen
   {Y}version{RESET}                Show CLI version
-
+  {Y}history{RESET}                Show full chat history
+  {Y}clearhistory{RESET}           Wipe the chat history clean
+  
 {BOLD}Customization{RESET}
   {Y}rename <name>{RESET}          Rename the AI  (e.g. rename Jarvis)
   {Y}randomname{RESET}             Give the AI a random name
@@ -170,6 +344,9 @@ def build_help(theme_colors):
   {Y}echo <text>{RESET}            Print text back to screen
   {Y}roast / roast <name>{RESET}   Get roasted or roast someone 🔥
   {Y}joke {RESET}                  Hear a random joke 😂
+  {Y}save txt{RESET}               Save to chat_history.txt
+  {Y}save json{RESET}              Save to chat_history.json
+  {Y}metrics{RESET}                Show message count stats
 
 {BOLD}Input Rules{RESET}
   • Max {BOLD}1000{RESET} characters per message
@@ -560,20 +737,22 @@ def main():
             print(raw[5:])
             continue
 
-        # ── Roast ─────────────────────────────────────────────
+        # ── Roast (AI-powered) ────────────────────────────────
         elif cmd in ("roast", "roast me") or cmd.startswith("roast "):
             if cmd.startswith("roast ") and cmd not in ("roast me",):
                 target = raw[6:].strip()
             else:
                 target = "you"
-            roast = random.choice(ROASTS)
+            sys_msg(DIM, "Cooking up a roast...\n")
+            roast = get_ai_roast(target)
             divider(RED)
             print(f"{BOLD}{RED}🔥 [{target}]{RESET} {roast}\n")
             continue
 
-        # ── Joke ──────────────────────────────────────────────
+        # ── Joke (AI-powered) ─────────────────────────────────
         elif cmd in ("joke", "jokes"):
-            setup, punchline = random.choice(JOKES)
+            sys_msg(DIM, "Fetching a joke...\n")
+            setup, punchline = get_ai_joke()
             divider(theme_colors["system"])
             print(f"{BOLD}{theme_colors['system']}😂 {setup}{RESET}")
             print(f"   {punchline}\n")
