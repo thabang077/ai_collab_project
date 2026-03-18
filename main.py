@@ -715,6 +715,9 @@ if __name__ == "__main__":
         - save txt : Save chat to TXT
         - save json : Save chat to JSON
         - exit    : Exit program
+        - clearhistory : Clear chat history
+        - In bash type cat chat_history.txt to see the saved history in txt format
+        - In bash type cat chat_history.json to see the saved history in json format
         """)
         
         else:
