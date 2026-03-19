@@ -1,4 +1,4 @@
-from ai_module import ask_ai
+from ai_module import ask_ai, PROVIDERS, DEFAULT_PROVIDER, detect_suggested_provider
 import os
 import sys
 import random
@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 
 # ── Version ────────────────────────────────────────────────────
+VERSION = "1.3.0"
 VERSION = "1.3.0"
 
 # ── ANSI Colors ────────────────────────────────────────────────
@@ -36,8 +37,14 @@ COLOR_MAP = {
     "pink":    PINK,
 }
 
+# ── Provider display colors ─────────────────────────────────────
+PROVIDER_COLORS = {
+    "chatgpt": GREEN,
+    "mini":  YELLOW,
+    "reasoning":  BLUE,
+}
+
 # ── Themes ─────────────────────────────────────────────────────
-# dark=pink, sunset=orange, ocean=blue
 THEMES = {
     "default": {"user": YELLOW, "ai": GREEN,  "system": CYAN},
     "dark":    {"user": PINK,   "ai": PINK,   "system": PINK},
@@ -298,12 +305,25 @@ def print_banner(ai_name, theme_colors):
 """)
 
 
+# ── Provider info display ───────────────────────────────────────
+def print_providers(current_provider):
+    print(f"\n{BOLD}Available AI Providers:{RESET}\n")
+    for key, info in PROVIDERS.items():
+        col    = PROVIDER_COLORS[key]
+        marker = f"  {BOLD}{DIM}◀ active{RESET}" if key == current_provider else ""
+        print(f"  {col}{info['icon']} {BOLD}{info['label']:<22}{RESET}"
+              f"  {DIM}{info['tagline']}{RESET}{marker}")
+        print(f"     {DIM}key: {key}   best for: {info['best_for']}{RESET}")
+    print(f"\n  {DIM}Tip: type  provider <name>  to switch  "
+          f"(e.g.  provider mini){RESET}\n")
+
+
 # ── Dynamic help (reads live state) ────────────────────────────
 def build_help(theme_colors):
-    Y  = theme_colors["user"]
-    C  = theme_colors["system"]
+    Y = theme_colors["user"]
+    C = theme_colors["system"]
     return f"""
-{BOLD}{C}g4f CLI — Command Reference{RESET}
+{BOLD}{C}AI CLI — Command Reference{RESET}
 
 {BOLD}General{RESET}
   {Y}help{RESET}                   Show this command list
@@ -315,10 +335,10 @@ def build_help(theme_colors):
   {Y}clearhistory{RESET}           Wipe the chat history clean
   
 {BOLD}Customization{RESET}
-  {Y}rename <name>{RESET}          Rename the AI  (e.g. rename Jarvis)
+  {Y}rename <n>{RESET}          Rename the AI  (e.g. rename Jarvis)
   {Y}randomname{RESET}             Give the AI a random name
 
-  {Y}theme <name>{RESET}           Switch color theme  (e.g. theme ocean)
+  {Y}theme <n>{RESET}           Switch color theme  (e.g. theme ocean)
   {Y}themes{RESET}                 List all available themes
 
   {Y}color <element> <color>{RESET}  Fine-tune a single color
@@ -329,7 +349,7 @@ def build_help(theme_colors):
   {Y}prompt <style>{RESET}         Change the input prompt style
   {Y}prompts{RESET}                List all prompt styles
 
-  {Y}mood <name>{RESET}            Set AI response mood  (e.g. mood funny)
+  {Y}mood <n>{RESET}            Set AI response mood  (e.g. mood funny)
   {Y}moods{RESET}                  List all available moods
 
   {Y}timestamp on/off{RESET}       Show/hide time on AI replies
@@ -342,7 +362,7 @@ def build_help(theme_colors):
   {Y}tips{RESET}                   Show usage tips
   {Y}examples{RESET}               Show example commands
   {Y}echo <text>{RESET}            Print text back to screen
-  {Y}roast / roast <name>{RESET}   Get roasted or roast someone 🔥
+  {Y}roast / roast <n>{RESET}   Get roasted or roast someone 🔥
   {Y}joke {RESET}                  Hear a random joke 😂
   {Y}save txt{RESET}               Save to chat_history.txt
   {Y}save json{RESET}              Save to chat_history.json
@@ -358,15 +378,23 @@ def build_help(theme_colors):
 
 # ── Per-command detailed help ───────────────────────────────────
 COMMAND_HELP = {
-    "theme":     "Usage: theme <name>\nSwitches the color theme.\nExample: theme ocean\nUse 'themes' to list all options.",
+    "theme":     "Usage: theme <n>\nSwitches the color theme.\nExample: theme ocean\nUse 'themes' to list all options.",
     "color":     "Usage: color <element> <colorname>\nElements: user, ai, system\nColors: " + ", ".join(COLOR_MAP) + "\nExample: color ai blue",
     "prompt":    "Usage: prompt <style>\nChanges the input prompt look.\nStyles: classic, arrow, simple, minimal, bracket\nExample: prompt bracket",
-    "rename":    "Usage: rename <name>\nRenames the AI assistant.\nExample: rename Jarvis",
-    "mood":      "Usage: mood <name>\nPrefixes your message with a tone instruction.\nExample: mood concise\nUse 'moods' to see all options.",
+    "rename":    "Usage: rename <n>\nRenames the AI assistant.\nExample: rename Jarvis",
+    "mood":      "Usage: mood <n>\nPrefixes your message with a tone instruction.\nExample: mood concise\nUse 'moods' to see all options.",
     "timestamp": "Usage: timestamp on  OR  timestamp off\nShows or hides the time next to AI replies.",
-    "whoami":    "Displays your current CLI settings (theme, mood, prompt style, etc.)",
-    "resetui":   "Resets all CLI settings back to their defaults.",
+    "whoami":    "Displays your current CLI settings (theme, mood, prompt style, provider, etc.)",
+    "resetui":   "Resets all CLI settings back to their defaults (including provider → chatgpt).",
     "echo":      "Usage: echo <text>\nPrints the given text back to the terminal.",
+    "provider":  ("Usage: provider <name>\n"
+                  "Switches the active AI provider.\n"
+                  "Available providers:\n"
+                  "  chatgpt  — ChatGPT GPT-4    (best for research)\n"
+                  "  mini   — mini Sonnet    (best for coding)\n"
+                  "  reasoning   — reasoning 1.5 Flash (best for mathematics)\n"
+                  "Example: provider mini\n"
+                  "Use 'providers' to see the full list with descriptions."),
 }
 
 
@@ -476,8 +504,9 @@ def main():
     mood           = "default"
     timestamp_on   = False
     last_input     = ""
+    provider       = DEFAULT_PROVIDER          # ← active AI provider
 
-    theme_colors = THEMES[theme].copy()   # mutable copy (supports `color` cmd)
+    theme_colors = THEMES[theme].copy()
 
     if banner_enabled:
         print_banner(ai_name, theme_colors)
@@ -520,7 +549,7 @@ def main():
 
         # ── Version ───────────────────────────────────────────
         elif cmd == "version":
-            sys_msg(theme_colors["system"], f"g4f CLI  v{VERSION}")
+            sys_msg(theme_colors["system"], f"AI CLI  v{VERSION}")
             continue
 
         # ── Clear ─────────────────────────────────────────────
@@ -528,9 +557,37 @@ def main():
             os.system("cls" if os.name == "nt" else "clear")
             continue
 
+        # ── Provider commands ─────────────────────────────────
+        elif cmd == "providers":
+            print_providers(provider)
+            continue
+
+        elif cmd == "provider":
+            col = PROVIDER_COLORS[provider]
+            info = PROVIDERS[provider]
+            sys_msg(col, f"{info['icon']}  Active provider: {BOLD}{info['label']}{RESET}{col}  "
+                         f"— {info['tagline']}")
+            sys_msg(DIM, "   Use 'providers' to list all, or 'provider <name>' to switch.")
+            print()
+            continue
+
+        elif cmd.startswith("provider "):
+            new_provider = raw.split()[1].lower()
+            if new_provider not in PROVIDERS:
+                sys_msg(RED, f"✖  Unknown provider '{new_provider}'.")
+                sys_msg(DIM, f"   Available: {', '.join(PROVIDERS)}")
+            else:
+                provider = new_provider
+                info = PROVIDERS[provider]
+                col  = PROVIDER_COLORS[provider]
+                sys_msg(col, f"✔  Switched to {info['icon']} {BOLD}{info['label']}{RESET}{col}"
+                             f"  — {info['tagline']}")
+            print()
+            continue
+
         # ── Rename AI ─────────────────────────────────────────
         elif cmd == "rename":
-            sys_msg(YELLOW, "Usage: rename <name>   e.g. rename Jarvis")
+            sys_msg(YELLOW, "Usage: rename <n>   e.g. rename Jarvis")
             continue
 
         elif cmd.startswith("rename "):
@@ -622,7 +679,7 @@ def main():
 
         elif cmd == "mood":
             sys_msg(YELLOW, f"Current mood: {mood}")
-            sys_msg(DIM,     "Usage: mood <name>   e.g. mood funny")
+            sys_msg(DIM,     "Usage: mood <n>   e.g. mood funny")
             continue
 
         elif cmd.startswith("mood "):
@@ -676,14 +733,18 @@ def main():
             mood           = "default"
             timestamp_on   = False
             last_input     = ""
+            provider       = DEFAULT_PROVIDER
             sys_msg(theme_colors["system"], "✔  CLI settings reset to defaults")
             continue
 
         # ── Whoami ────────────────────────────────────────────
         elif cmd == "whoami":
+            prov_info = PROVIDERS[provider]
+            prov_col  = PROVIDER_COLORS[provider]
             divider(theme_colors["system"])
             print(f"""
   {DIM}AI Name   {RESET}{BOLD}{theme_colors['ai']}{ai_name}{RESET}
+  {DIM}Provider  {RESET}{prov_col}{BOLD}{prov_info['icon']} {prov_info['label']}{RESET}  {DIM}{prov_info['tagline']}{RESET}
   {DIM}Theme     {RESET}{theme}
   {DIM}Prompt    {RESET}{prompt_style}
   {DIM}Mood      {RESET}{mood}
@@ -698,6 +759,8 @@ def main():
         # ── Tips ──────────────────────────────────────────────
         elif cmd == "tips":
             tips = [
+                "Use 'providers' to see all AI options with recommendations",
+                "Type 'provider mini' for coding help, 'provider reasoning' for math",
                 "Use 'themes' to browse all color themes",
                 "Use 'color ai green' to fine-tune a single color",
                 "Try 'mood concise' for shorter AI answers",
@@ -715,15 +778,18 @@ def main():
         # ── Examples ──────────────────────────────────────────
         elif cmd == "examples":
             examples = [
+                ("providers",           "List all AI providers"),
+                ("provider mini",     "Switch to mini for coding"),
+                ("provider reasoning",     "Switch to reasoning for math"),
+                ("provider chatgpt",    "Switch to ChatGPT for research"),
                 ("rename Jarvis",       "Rename AI to Jarvis"),
                 ("theme ocean",         "Switch to ocean theme"),
                 ("color user orange",   "Make your text orange"),
                 ("prompt bracket",      "Use [you] prompt style"),
                 ("mood funny",          "Get humorous responses"),
                 ("timestamp on",        "Show time on replies"),
-                ("help mood",           "Detailed help on mood"),
+                ("help provider",       "Detailed help on provider"),
                 ("roast me",            "Get roasted 🔥"),
-                ("roast Jarvis",        "Roast someone by name"),
                 ("joke",                "Hear a random joke 😂"),
             ]
             sys_msg(BOLD, "Example commands:")
@@ -783,7 +849,7 @@ def main():
         elif cmd in ("color", "prompt", "theme", "mood", "timestamp"):
             pass
 
-        # ── AI Handling ─────────────────────────────────────
+        # ── AI Handling ───────────────────────────────────────
         valid, err = validate_input(raw, last_input)
         if not valid:
             print(err)
@@ -794,10 +860,12 @@ def main():
         
         query = MOODS[mood] + raw
 
-        sys_msg(DIM, "AI is thinking...\n")
+        prov_info = PROVIDERS[provider]
+        prov_col  = PROVIDER_COLORS[provider]
+        sys_msg(DIM, f"Asking {prov_col}{prov_info['icon']} {prov_info['label']}{RESET}{DIM}…{RESET}\n")
 
         try:
-            response = ask_ai(query)
+            response = ask_ai(query, provider=provider)
         except Exception as e:
             response = f"{RED}Error: {e}{RESET}"
 
