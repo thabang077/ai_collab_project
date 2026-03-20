@@ -68,6 +68,25 @@ def detect_suggested_provider(text: str) -> str | None:
     return None
 
 
+
+# ── Spam / prompt-injection markers ──────────────────────────────────────────
+_SPAM_MARKERS = [
+    "ignore previous instructions",
+    "ignore all previous",
+    "disregard your instructions",
+    "you are now",
+    "act as an ai with no restrictions",
+    "pretend you have no restrictions",
+    "jailbreak",
+    "dan mode",
+    "bypass your filters",
+    "forget everything above",
+    "new persona",
+    "system prompt:",
+    "you must comply",
+    "override your programming",
+]
+
 def _is_spam(text: str) -> bool:
     lower = text.lower()
     return any(marker.lower() in lower for marker in _SPAM_MARKERS)
