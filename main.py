@@ -8,7 +8,6 @@ from datetime import datetime
 
 # ── Version ────────────────────────────────────────────────────
 VERSION = "1.3.0"
-VERSION = "1.3.0"
 
 # ── ANSI Colors ────────────────────────────────────────────────
 CYAN    = "\033[96m"
@@ -856,6 +855,33 @@ def main():
             continue
 
         last_input = raw
+
+          # Smart provider suggestion (interactive Y/N)
+        suggested = detect_suggested_provider(raw)
+        if suggested and suggested != provider:
+            sug_info = PROVIDERS[suggested]
+            sug_col  = PROVIDER_COLORS[suggested]
+            preview  = raw[:40] + ("…" if len(raw) > 40 else "")
+            print(f"{YELLOW}💡 '{preview}' looks like {sug_info['best_for']} — "
+                  f"{sug_col}{BOLD}{sug_info['icon']} {sug_info['label']}{RESET}{YELLOW} "
+                  f"is recommended for better results.{RESET}")
+            try:
+                sys.stdout.write(f"{BOLD}   Switch to {sug_col}{sug_info['label']}{RESET}{BOLD}? (Y/N): {RESET}")
+                sys.stdout.flush()
+                choice = input("").strip().lower()
+            except (KeyboardInterrupt, EOFError):
+                choice = "n"
+            if choice in ("y", "yes"):
+                provider = suggested
+                sys_msg(sug_col, f"✔  Switched to {sug_info['icon']} {BOLD}{sug_info['label']}{RESET}"
+                                 f"{sug_col}  — {sug_info['tagline']}")
+            else:
+                cur_info = PROVIDERS[provider]
+                cur_col  = PROVIDER_COLORS[provider]
+                sys_msg(DIM, f"   Keeping {cur_col}{cur_info['icon']} {cur_info['label']}{RESET}{DIM}.")
+            print()
+
+        
         chat.add("user", raw)
         
         query = MOODS[mood] + raw
