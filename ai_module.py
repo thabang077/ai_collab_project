@@ -120,7 +120,7 @@ def _ask_chatgpt(question: str) -> str:
     client = G4FClient()
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",
             messages=[{"role": "user", "content": question}],
         )
         return response.choices[0].message.content
