@@ -843,6 +843,19 @@ def main():
         elif cmd == "clearhistory":
             chat.clear()
             continue
+        elif cmd == "assist":
+            print("""
+        Available commands:
+        - history : Show chat history
+        - metrics : Show usage stats
+        - save txt : Save chat to TXT
+        - save json : Save chat to JSON
+        - exit    : Exit program
+        - clearhistory : Clear chat history
+        - In bash type cat chat_history.txt to see the saved history in txt format
+        - In bash type cat chat_history.json to see the saved history in json format
+        """)
+            continue
 
         # ── Unknown single-word commands ──────────────────────
         elif cmd in ("color", "prompt", "theme", "mood", "timestamp"):
@@ -856,7 +869,7 @@ def main():
 
         last_input = raw
 
-          # Smart provider suggestion (interactive Y/N)
+        # Smart provider suggestion (interactive Y/N)
         suggested = detect_suggested_provider(raw)
         if suggested and suggested != provider:
             sug_info = PROVIDERS[suggested]
@@ -881,9 +894,8 @@ def main():
                 sys_msg(DIM, f"   Keeping {cur_col}{cur_info['icon']} {cur_info['label']}{RESET}{DIM}.")
             print()
 
-        
         chat.add("user", raw)
-        
+
         query = MOODS[mood] + raw
 
         prov_info = PROVIDERS[provider]
