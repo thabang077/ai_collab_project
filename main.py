@@ -81,7 +81,7 @@ if __name__ == "__main__":
         elif user_input.lower() == "clearhistory":
                     chat.clear()
         
-        elif user_input.lower() == "help":
+        elif user_input.lower() == "assist":
                     print("""
         Available commands:
         - history : Show chat history
