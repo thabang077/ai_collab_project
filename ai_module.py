@@ -145,7 +145,7 @@ def _ask_gpto1_mini(question: str) -> str:
     client = G4FClient()
     try:
         response = client.chat.completions.create(
-            model="qwen-3-30b",
+            model="command-r",
             provider=HuggingSpace,
             messages=[{"role": "user", "content": question}],
         )
